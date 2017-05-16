@@ -6,7 +6,7 @@
 class NNLOPSWeights : public HgammaAnalysis {
 private:
   class impl;
-  impl *p; //!
+  std::shared_ptr<impl> p; //!
 
 public:
   NNLOPSWeights() { }
