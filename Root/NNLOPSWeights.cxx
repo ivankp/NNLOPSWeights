@@ -2,8 +2,10 @@
 
 #include <type_traits>
 
+#include <TParameter.h>
+
 #include <HGamAnalysisFramework/HgammaIncludes.h>
-#include <HGamAnalysisFramework/HGamVariables.h>
+#include <HGamAnalysisFramework/HGamVariables.h> // for var::
 
 template <typename T>
 using decay_t = typename std::decay<T>::type;
@@ -16,6 +18,7 @@ using std::endl;
 
 struct NNLOPSWeights::impl {
   TTree *tree;
+  TParameter<double> xs_br_fe;
 
 #ifdef VAR
 #error "Macro name VAR already in use"
@@ -31,7 +34,7 @@ struct NNLOPSWeights::impl {
 
   xAOD::HiggsWeights hw;
 
-  impl(): tree(new TTree("tree","")) {
+  impl(): tree(new TTree("tree","")), xs_br_fe("crossSectionBRfilterEff",0) {
 #define VAR(NAME) tree->Branch(#NAME,&NAME);
     VAR(N_j_30)
     VAR(pT_yy)
@@ -59,6 +62,8 @@ EL::StatusCode NNLOPSWeights::createOutput() {
 EL::StatusCode NNLOPSWeights::initialize() {
   const EL::StatusCode status = HgammaAnalysis::initialize();
   wk()->addOutput(p->tree);
+  p->xs_br_fe.SetVal( HgammaAnalysis::crossSectionBRfilterEff() );
+  wk()->addOutput(&p->xs_br_fe);
   return status;
 }
 
@@ -89,6 +94,7 @@ EL::StatusCode NNLOPSWeights::execute() {
     // --------------------------------------------------------------
 
     // Compute variables --------------------------------------------
+    // NOTE: var is a namespace
 #define VAR(NAME) p->NAME = var::NAME.truth();
     VAR(N_j_30)
     VAR(pT_yy)
