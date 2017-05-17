@@ -31,11 +31,13 @@ struct NNLOPSWeights::impl {
   VAR(Dphi_j_j_30)
   VAR(Dphi_j_j_30_signed)
 #undef VAR
+  bool isFiducial;
 
   xAOD::HiggsWeights hw;
 
   impl(): tree(new TTree("tree","")), xs_br_fe("crossSectionBRfilterEff",0) {
 #define VAR(NAME) tree->Branch(#NAME,&NAME);
+    VAR(isFiducial)
     VAR(N_j_30)
     VAR(pT_yy)
     VAR(pT_j1_30)
@@ -73,44 +75,41 @@ EL::StatusCode NNLOPSWeights::execute() {
   auto* event = eventHandler();
   auto* truth = truthHandler();
 
-  // select photons -------------------------------------------------
+  // select objects -------------------------------------------------
   auto all_photons = truth->getPhotons();
   auto photons = truth->applyPhotonSelection(all_photons);
+  auto all_electrons = truth->getElectrons();
+  auto all_muons = truth->getMuons();
+  auto all_jets = truth->getJets();
+  auto electrons = truth->applyElectronSelection(all_electrons);
+  auto muons = truth->applyMuonSelection(all_muons);
+  auto jets = truth->applyJetSelection(all_jets);
+
+  truth->removeOverlap(photons,jets,electrons,muons);
   // ----------------------------------------------------------------
 
-  if (truth->passFiducial(&photons)) {
-    // select other objects -----------------------------------------
-    auto all_electrons = truth->getElectrons();
-    auto all_muons = truth->getMuons();
-    auto all_jets = truth->getJets();
-    auto electrons = truth->applyElectronSelection(all_electrons);
-    auto muons = truth->applyMuonSelection(all_muons);
-    auto jets = truth->applyJetSelection(all_jets);
+  // Compute variables ----------------------------------------------
+  p->isFiducial = truth->passFiducial(&photons);
 
-    truth->removeOverlap(photons,jets,electrons,muons);
+  HG::VarHandler::getInstance()->setTruthContainers(
+    &all_photons, &electrons, &muons, &jets);
 
-    HG::VarHandler::getInstance()->setTruthContainers(
-      &all_photons, &electrons, &muons, &jets);
-    // --------------------------------------------------------------
-
-    // Compute variables --------------------------------------------
-    // NOTE: var is a namespace
+  // NOTE: var is a namespace
 #define VAR(NAME) p->NAME = var::NAME.truth();
-    VAR(N_j_30)
-    VAR(pT_yy)
-    VAR(pT_j1_30)
-    VAR(m_jj_30)
-    VAR(Dphi_j_j_30)
-    VAR(Dphi_j_j_30_signed)
+  VAR(N_j_30)
+  VAR(pT_yy)
+  VAR(pT_j1_30)
+  VAR(m_jj_30)
+  VAR(Dphi_j_j_30)
+  VAR(Dphi_j_j_30_signed)
 #undef VAR
-    // --------------------------------------------------------------
+  // ----------------------------------------------------------------
 
-    // Obtain weights -----------------------------------------------
-    p->hw = event->higgsWeights();
-    // --------------------------------------------------------------
+  // Obtain weights -------------------------------------------------
+  p->hw = event->higgsWeights();
+  // ----------------------------------------------------------------
 
-    p->tree->Fill();
-  }
+  p->tree->Fill();
 
   return EL::StatusCode::SUCCESS;
 }
