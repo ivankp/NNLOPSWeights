@@ -25,6 +25,9 @@ inline std::string cat(const TT&... tt) {
   return ss.str();
 }
 
+template <typename T>
+using decay_t = typename std::decay<T>::type;
+
 // this is needed to distribute the algorithm to the workers
 ClassImp(NNLOPSWeights)
 
@@ -37,7 +40,7 @@ struct NNLOPSWeights::impl {
 #ifdef VAR
 #error "Macro name VAR already in use"
 #endif
-#define VAR(NAME) decltype(var::NAME.truth()) NAME;
+#define VAR(NAME) decay_t<decltype(var::NAME.truth())> NAME;
   VAR(N_j_30)
   VAR(pT_yy)
   VAR(pT_j1_30)
@@ -50,14 +53,18 @@ struct NNLOPSWeights::impl {
 
   impl(): tree(new TTree("tree","")) {
 #define VAR(NAME) tree->Branch(#NAME,&NAME);
-  VAR(N_j_30)
-  VAR(pT_yy)
-  VAR(pT_j1_30)
-  VAR(m_jj_30)
-  VAR(Dphi_j_j_30)
-  VAR(Dphi_j_j_30_signed)
+    VAR(N_j_30)
+    VAR(pT_yy)
+    VAR(pT_j1_30)
+    VAR(m_jj_30)
+    VAR(Dphi_j_j_30)
+    VAR(Dphi_j_j_30_signed)
 #undef VAR
     tree->Branch("w_nominal",&hw.nominal);
+    tree->Branch("w_pdf4lhc_unc",&hw.pdf4lhc_unc);
+    tree->Branch("w_nnpdf30_unc",&hw.nnpdf30_unc);
+    tree->Branch("w_qcd",&hw.qcd);
+    tree->Branch("w_qcd_nnlops",&hw.qcd_nnlops);
   }
 };
 
