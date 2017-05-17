@@ -1,10 +1,6 @@
 #include "NNLOPSWeights/NNLOPSWeights.h"
 
-#include <iostream>
-#include <memory>
 #include <type_traits>
-
-#include <TLorentzVector.h>
 
 #include <HGamAnalysisFramework/HgammaIncludes.h>
 #include <HGamAnalysisFramework/HGamVariables.h>
